@@ -12,4 +12,6 @@ interface Video_Provider {
 
 	public function get_video_embed_url();
 
+	public function get_video_details();
+
 }

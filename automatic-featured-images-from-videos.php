@@ -127,17 +127,17 @@ function wds_check_if_content_contains_video( $post_id, $post ) {
 
 		if ( $video_provider->match_content( $content ) ) {
 			$has_video           = true;
+			$video_details       = $video_provider->get_video_details();
 			$video_thumbnail_url = $video_provider->get_video_thumbnail_url();
 			$video_url           = $video_provider->get_video_url();
 			$video_embed_url     = $video_provider->get_video_embed_url();
 			$video_id            = $video_provider->get_video_id();
-
 			break;
 		}
 	}
 
 	if ( $post_id
-	     && ! has_post_thumbnail( $post_id )
+	    //  && ! has_post_thumbnail( $post_id )
 	     && $content
 	     && $has_video
 	) {
@@ -153,12 +153,15 @@ function wds_check_if_content_contains_video( $post_id, $post ) {
 		update_post_meta( $post_id, '_is_video', true );
 		update_post_meta( $post_id, '_video_url', $video_url );
 		update_post_meta( $post_id, '_video_embed_url', $video_embed_url );
+		update_post_meta( $post_id, '_video_details', $video_details );
+		
 	} else {
 		// Need to set because we don't have one, and we can skip on future iterations.
 		// Need way to potentially force check ALL.
 		update_post_meta( $post_id, '_is_video', false );
 		delete_post_meta( $post_id, '_video_url' );
 		delete_post_meta( $post_id, '_video_embed_url' );
+		delete_post_meta( $post_id, '_video_details' );
 	}
 
 }
@@ -185,10 +188,11 @@ function wds_set_video_thumbnail_as_featured_image( $post_id, $video_thumbnail_u
 
 	$stmt = "SELECT ID FROM {$wpdb->posts}";
 	$stmt .= $wpdb->prepare(
-		' WHERE post_type = %s AND guid LIKE %s',
+		' WHERE post_type = %s AND guid LIKE %s AND post_parent = %d ORDER BY ID DESC limit 1',
         'attachment',
-	    '%' . $wpdb->esc_like( $video_id ) . '%'
-    );
+		'%' . $wpdb->esc_like( $video_id ) . '%',
+		get_the_ID()
+	);
 	$attachment = $wpdb->get_col( $stmt );
 	if ( !empty( $attachment[0] ) ) {
 		$attachment_id = $attachment[0];
@@ -203,7 +207,9 @@ function wds_set_video_thumbnail_as_featured_image( $post_id, $video_thumbnail_u
 	}
 
 	// Woot! We got an image, so set it as the post thumbnail.
-	set_post_thumbnail( $post_id, $attachment_id );
+	if ( ! has_post_thumbnail( $post_id ) ) {
+		set_post_thumbnail( $post_id, $attachment_id );
+	}
 }
 
 /**
@@ -357,6 +363,26 @@ function wds_get_embeddable_video_url( $post_id ) {
 }
 
 /**
+ * Get the video details
+ *
+ * @author Ahmader
+ *
+ * @since 1.2.0
+ *
+ * @param int $post_id Post ID to grab video for.
+ * @return string
+ */
+function wds_get_video_details( $post_id ) {
+	if ( wds_post_has_video( $post_id ) ) {
+		if ( ! metadata_exists( 'post', $post_id, '_video_details' ) ) {
+			wds_check_if_content_contains_video( $post_id, get_post( $post_id ) );
+		}
+
+		return get_post_meta( $post_id, '_video_details', true );
+	}
+	return '';
+}
+/**
  * Register a metabox to display the video on post edit view.
  * @author Gary Kovar
  * @since 1.1.0
@@ -385,6 +411,8 @@ function wds_video_thumbnail_meta() {
 	echo wds_get_video_url($post->ID);
 	echo '<h3>' . esc_html__( 'Video Embed URL', 'wds_automatic_featured_images_from_videos' ) . '</h3>';
 	echo wds_get_embeddable_video_url( $post->ID );
+	echo '<h3>' . esc_html__( 'Video Details', 'wds_automatic_featured_images_from_videos' ) . '</h3>';
+	var_dump(wds_get_video_details( $post->ID ));
 }
 
 /**

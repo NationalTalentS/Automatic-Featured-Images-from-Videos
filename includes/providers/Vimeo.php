@@ -45,6 +45,9 @@ class Vimeo implements Video_Provider {
 		return $this->id;
 	}
 
+	public function get_video_details() {
+		
+	}
 }
 
 add_action( 'wds_featured_images_from_video_providers', function( $providers ) {

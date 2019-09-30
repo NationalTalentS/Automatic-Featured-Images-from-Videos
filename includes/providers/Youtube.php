@@ -3,6 +3,7 @@
 class Youtube implements Video_Provider {
 
 	protected $id;
+	protected $details;
 
 	public function match_content( $content ) {
 		if ( preg_match( '#\/\/(www\.)?(youtu|youtube|youtube-nocookie)\.(com|be)\/(watch|embed)?\/?(\?v=)?([a-zA-Z0-9\-\_]+)#', $content, $youtube_matches ) ) {
@@ -53,6 +54,22 @@ class Youtube implements Video_Provider {
 
 	public function get_video_id() {
 		return $this->id;
+	}
+
+	public function get_video_details() {
+		$youtube_key = 'AIzaSyDOvzAm59l57IFx21bxMoreluknu4RrtXg';
+		$youtube_key = 'AIzaSyBou9ueHhoX-j7ljroF7WGaQDxdL7Y4Wks';
+		$id = $this->id;
+		$youtube_api = "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=" . $this->id . "&key=" . $youtube_key;
+		$description = file_get_contents($youtube_api);
+		// var_dump($description);
+		$description = json_decode($description, true);
+		if ( !isset($description['items']) && count( $description['items'] ) === 0 ) {
+			return;
+		}
+		$info = array_merge( $description['items'][0]['snippet'], $description['items'][0]['contentDetails'] );
+		$this->details = $info;
+		return $info;
 	}
 
 }
