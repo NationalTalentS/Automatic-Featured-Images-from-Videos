@@ -57,10 +57,13 @@ class Youtube implements Video_Provider {
 	}
 
 	public function get_video_details() {
-		$youtube_key = 'AIzaSyDOvzAm59l57IFx21bxMoreluknu4RrtXg';
-		$youtube_key = 'AIzaSyBou9ueHhoX-j7ljroF7WGaQDxdL7Y4Wks';
+
+		if ( ! defined('YOUTUBE_KEY') ) {
+			return false;
+		}
+
 		$id = $this->id;
-		$youtube_api = "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=" . $this->id . "&key=" . $youtube_key;
+		$youtube_api = "https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=" . $this->id . "&key=" . YOUTUBE_KEY;
 		$description = file_get_contents($youtube_api);
 		// var_dump($description);
 		$description = json_decode($description, true);
